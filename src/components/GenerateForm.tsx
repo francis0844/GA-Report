@@ -5,10 +5,10 @@ import { generateAnalyticsAction } from "@/app/generate/actions";
 import { useMemo } from "react";
 
 type ActionState =
-  | { success: false; error: string }
+  | { success: false; error?: string }
   | { success: true; normalized: unknown; raw: unknown };
 
-const initialState: ActionState = { success: false };
+const initialState: ActionState = { success: false, error: "" };
 
 export function GenerateForm() {
   const [state, formAction] = useFormState(generateAnalyticsAction, initialState);
