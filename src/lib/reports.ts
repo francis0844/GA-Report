@@ -4,10 +4,16 @@ import { getSupabaseClient } from "./supabase";
 
 export type ReportRecord = {
   id: string;
+  type?: string;
   title: string;
   property_id: string;
   start_date: string;
   end_date: string;
+  comparison_start_date?: string | null;
+  comparison_end_date?: string | null;
+  raw_ga_data?: Record<string, unknown> | null;
+  normalized_metrics?: Record<string, unknown> | null;
+  ai_analysis?: Record<string, unknown> | null;
   status: string;
   created_at: string;
 };
@@ -36,6 +42,17 @@ type ReportRow = ReportRecord & {
 type TotalRow = { metric: string; value: number | string };
 type TimeseriesRow = { dimension_value: string; metrics: Record<string, number> };
 
+export type ReportSummary = {
+  id: string;
+  type: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  comparison_start_date: string | null;
+  comparison_end_date: string | null;
+  created_at: string;
+};
+
 type CreateReportInput = {
   title: string;
   propertyId: string;
@@ -46,6 +63,39 @@ type CreateReportInput = {
 export async function cleanupOldReports() {
   const supabase = getSupabaseClient();
   await supabase.rpc("purge_old_reports");
+}
+
+export async function deleteReportsByIds(ids: string[]) {
+  if (!ids.length) return;
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("reports").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+}
+
+export async function fetchReportSummaries(
+  limit = 50
+): Promise<ReportSummary[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("reports")
+    .select(
+      "id, type, title, start_date, end_date, comparison_start_date, comparison_end_date, created_at"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) throw new Error(error?.message ?? "Failed to fetch reports");
+
+  return data.map((row) => ({
+    id: row.id,
+    type: row.type ?? "monthly",
+    title: row.title,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    comparison_start_date: row.comparison_start_date ?? null,
+    comparison_end_date: row.comparison_end_date ?? null,
+    created_at: row.created_at,
+  }));
 }
 
 export async function createReportRecord(input: CreateReportInput) {
