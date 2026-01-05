@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { buildReportPdf } from "@/lib/pdf";
 import { fetchReportBundle } from "@/lib/reports";
 import { NextResponse } from "next/server";
@@ -12,8 +14,9 @@ export async function GET(
   }
 
   const pdf = await buildReportPdf(bundle);
+  const body = Buffer.from(pdf);
 
-  return new NextResponse(pdf, {
+  return new NextResponse(body, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
