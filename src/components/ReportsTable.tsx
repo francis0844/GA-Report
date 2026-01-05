@@ -64,7 +64,8 @@ export function ReportsTable({ summaries, selectedIds, onSelectionChange }: Prop
         setStatus(result.error);
       } else {
         setStatus("Deleted. Refreshing…");
-        setSelected(new Set());
+        setInternalSelected(new Set());
+        onSelectionChange?.([]);
       }
     });
   };
