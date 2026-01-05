@@ -13,26 +13,19 @@ export type GaReportResult = {
   timeseries: GaRow[];
 };
 
-type FetchReportInput = {
-  propertyId: string;
+type FetchAnalyticsInput = {
+  propertyId?: string;
   startDate: string;
   endDate: string;
+  metrics?: string[];
+  dimensions?: string[];
 };
-
-const METRICS = [
-  "sessions",
-  "totalUsers",
-  "newUsers",
-  "averageSessionDuration",
-  "eventCount",
-  "conversions",
-  "purchaseRevenue",
-] as const;
 
 function getAuthClient() {
   const clientId = process.env.GA_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GA_OAUTH_CLIENT_SECRET;
   const refreshToken = process.env.GA_OAUTH_REFRESH_TOKEN;
+  const redirectUri = process.env.GA_OAUTH_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !refreshToken) {
     throw new Error(
@@ -40,28 +33,52 @@ function getAuthClient() {
     );
   }
 
-  const oauthClient = new OAuth2Client(clientId, clientSecret);
+  const oauthClient = new OAuth2Client(clientId, clientSecret, redirectUri);
   oauthClient.setCredentials({ refresh_token: refreshToken });
   return oauthClient;
 }
 
-export async function fetchGaReport({
+function normalizeMetrics(metrics?: string[]) {
+  if (!metrics?.length) {
+    return ["sessions", "totalUsers", "eventCount", "conversions"].map((m) => ({
+      name: m,
+    }));
+  }
+  return metrics.map((m) => ({ name: m }));
+}
+
+function normalizeDimensions(dimensions?: string[]) {
+  if (!dimensions?.length) return [{ name: "date" }];
+  return dimensions.map((d) => ({ name: d }));
+}
+
+export async function fetchAnalytics({
   propertyId,
   startDate,
   endDate,
-}: FetchReportInput): Promise<GaReportResult> {
+  metrics,
+  dimensions,
+}: FetchAnalyticsInput): Promise<GaReportResult> {
+  const property = propertyId ?? process.env.GA4_PROPERTY_ID;
+  if (!property) {
+    throw new Error("Missing GA4 property ID. Set GA4_PROPERTY_ID in env.");
+  }
+
   const authClient = getAuthClient();
   const analyticsDataClient = new BetaAnalyticsDataClient({ authClient });
 
+  const metricDefs = normalizeMetrics(metrics);
+  const dimensionDefs = normalizeDimensions(dimensions);
+
   const [response] = await analyticsDataClient.runReport({
-    property: `properties/${propertyId}`,
+    property: `properties/${property}`,
     dateRanges: [{ startDate, endDate }],
-    dimensions: [{ name: "date" }],
-    metrics: METRICS.map((m) => ({ name: m })),
+    dimensions: dimensionDefs,
+    metrics: metricDefs,
   });
 
   const totalsMap: Record<string, number> = {};
-  METRICS.forEach((m) => (totalsMap[m] = 0));
+  metricDefs.forEach((m) => (totalsMap[m.name] = 0));
 
   const timeseries: GaRow[] =
     response.rows?.map((row) => {
@@ -71,17 +88,17 @@ export async function fetchGaReport({
         ? startDate
         : format(parsedDate, "yyyy-MM-dd");
 
-      const metrics: Record<string, number> = {};
-      METRICS.forEach((metric, index) => {
+      const metricsRecord: Record<string, number> = {};
+      metricDefs.forEach((metric, index) => {
         const rawValue = row.metricValues?.[index]?.value ?? "0";
         const numeric = Number(rawValue);
-        metrics[metric] = Number.isNaN(numeric) ? 0 : numeric;
-        totalsMap[metric] += metrics[metric];
+        metricsRecord[metric.name] = Number.isNaN(numeric) ? 0 : numeric;
+        totalsMap[metric.name] += metricsRecord[metric.name];
       });
 
       return {
         date: formattedDate,
-        metrics,
+        metrics: metricsRecord,
       };
     }) ?? [];
 
@@ -95,7 +112,6 @@ export async function fetchGaReport({
 
 function parseISOFromGA(dateString: string) {
   if (!dateString) return new Date().toISOString().slice(0, 10);
-  // GA returns YYYYMMDD
   const iso = `${dateString.slice(0, 4)}-${dateString.slice(
     4,
     6
