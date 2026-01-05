@@ -191,7 +191,12 @@ export function ReportCharts({ reportId, normalized }: Props) {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number, name: string) => [`${value}`, name]} />
+              <Tooltip
+                formatter={(value) => {
+                  const num = typeof value === "number" ? value : 0;
+                  return [`${num}`, ""];
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
