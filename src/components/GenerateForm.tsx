@@ -5,6 +5,7 @@ import { generateAnalyticsAction } from "@/app/generate/actions";
 import { type GenerateActionResponse } from "@/app/generate/types";
 import { useMemo } from "react";
 import { MetricsGrid } from "./MetricsGrid";
+import { AiInsightsPanel } from "./AiInsightsPanel";
 
 const initialState: GenerateActionResponse = { success: false, error: "" };
 
@@ -74,11 +75,14 @@ export function GenerateForm() {
       ) : null}
 
       {state?.success ? (
-        <MetricsGrid
-          metrics={state.data.metrics}
-          currentRange={state.data.currentRange}
-          comparisonRange={state.data.comparisonRange}
-        />
+        <div className="space-y-4">
+          <MetricsGrid
+            metrics={state.data.metrics}
+            currentRange={state.data.currentRange}
+            comparisonRange={state.data.comparisonRange}
+          />
+          <AiInsightsPanel reportId={state.data.reportId ?? null} analysis={state.data.analysis ?? null} />
+        </div>
       ) : null}
     </form>
   );

@@ -11,6 +11,15 @@ export type ComparisonResult = {
   currentRange: { start: string; end: string };
   comparisonRange: { start: string; end: string };
   reportId?: string;
+  analysis?: AiAnalysis;
+};
+
+export type AiAnalysis = {
+  perMetric: { metric: string; insight: string; impact: string }[];
+  anomalies: string[];
+  seoRecommendations: string[];
+  technicalRecommendations: string[];
+  summary: string;
 };
 
 export type GenerateActionResponse =

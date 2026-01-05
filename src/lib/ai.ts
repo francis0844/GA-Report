@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { GaRow } from "./ga";
+import { AiAnalysis, MetricChange } from "@/app/generate/types";
 
 type InsightInput = {
   title: string;
@@ -59,4 +60,81 @@ Return 3-5 concise bullets that call out trends, anomalies, and recommended next
     summary,
     model: completion.model ?? "gpt-4o-mini",
   };
+}
+
+type ComparisonInsightsInput = {
+  title: string;
+  currentRange: { start: string; end: string };
+  comparisonRange: { start: string; end: string };
+  metrics: MetricChange[];
+};
+
+export async function generateComparisonInsights(
+  payload: ComparisonInsightsInput
+): Promise<AiAnalysis> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return {
+      perMetric: [],
+      anomalies: ["AI unavailable: set OPENAI_API_KEY to enable insights."],
+      seoRecommendations: [],
+      technicalRecommendations: [],
+      summary: "AI unavailable: OPENAI_API_KEY missing.",
+    };
+  }
+
+  const client = new OpenAI({ apiKey });
+  const prompt = buildComparisonPrompt(payload);
+
+  const completion = await client.responses.create({
+    model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    input: prompt,
+  });
+
+  const text = completion.output_text ?? "{}";
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      perMetric: parsed.perMetric ?? [],
+      anomalies: parsed.anomalies ?? [],
+      seoRecommendations: parsed.seoRecommendations ?? [],
+      technicalRecommendations: parsed.technicalRecommendations ?? [],
+      summary: parsed.summary ?? "",
+    };
+  } catch {
+    return {
+      perMetric: [],
+      anomalies: ["AI response could not be parsed."],
+      seoRecommendations: [],
+      technicalRecommendations: [],
+      summary: text,
+    };
+  }
+}
+
+function buildComparisonPrompt(input: ComparisonInsightsInput) {
+  const metricLines = input.metrics
+    .map(
+      (m) =>
+        `${m.metric}: current=${m.current}, comparison=${m.comparison}, absChange=${m.absChange}, pctChange=${m.pctChange}`
+    )
+    .join("\n");
+
+  return `
+You are a web analytics strategist. Analyze GA4 metrics for ${input.title}.
+Current range: ${input.currentRange.start} to ${input.currentRange.end}
+Comparison range: ${input.comparisonRange.start} to ${input.comparisonRange.end}
+
+Metrics (one per line):
+${metricLines}
+
+Return strict JSON with keys:
+{
+  "perMetric": [{"metric": "...", "insight": "...", "impact": "..."}],
+  "anomalies": ["..."],
+  "seoRecommendations": ["..."],
+  "technicalRecommendations": ["..."],
+  "summary": "overall takeaway"
+}`;
 }

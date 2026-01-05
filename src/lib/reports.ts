@@ -50,6 +50,7 @@ export type ReportSummary = {
   end_date: string;
   comparison_start_date: string | null;
   comparison_end_date: string | null;
+  ai_analysis?: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -85,7 +86,7 @@ export async function fetchReportSummaries(
   const { data, error } = await supabase
     .from("reports")
     .select(
-      "id, type, title, start_date, end_date, comparison_start_date, comparison_end_date, created_at"
+      "id, type, title, start_date, end_date, comparison_start_date, comparison_end_date, ai_analysis, created_at"
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -100,6 +101,7 @@ export async function fetchReportSummaries(
     end_date: row.end_date,
     comparison_start_date: row.comparison_start_date ?? null,
     comparison_end_date: row.comparison_end_date ?? null,
+    ai_analysis: row.ai_analysis ?? null,
     created_at: row.created_at,
   }));
 }
@@ -182,6 +184,38 @@ export async function storeAiInsight(
 
   if (error || !data) throw new Error(error?.message ?? "Unable to save AI");
   return data as AiInsight;
+}
+
+export async function updateReportAnalysis(
+  reportId: string,
+  analysis: Record<string, unknown>
+) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("reports")
+    .update({ ai_analysis: analysis })
+    .eq("id", reportId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function fetchReportNormalized(reportId: string) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("reports")
+    .select("id, normalized_metrics, title, start_date, end_date, comparison_start_date, comparison_end_date")
+    .eq("id", reportId)
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Report not found");
+  return data as {
+    id: string;
+    normalized_metrics: Record<string, unknown> | null;
+    title: string;
+    start_date: string;
+    end_date: string;
+    comparison_start_date: string | null;
+    comparison_end_date: string | null;
+  };
 }
 
 export async function fetchReports(limit = 5): Promise<ReportBundle[]> {

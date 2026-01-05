@@ -1,10 +1,11 @@
 "use server";
 
 import { fetchAnalytics } from "@/lib/ga";
-import { createReportRecord } from "@/lib/reports";
+import { createReportRecord, updateReportAnalysis } from "@/lib/reports";
 import { addDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { MetricChange, GenerateActionResponse } from "./types";
+import { generateComparisonInsights } from "@/lib/ai";
 
 type ActionResponse = GenerateActionResponse;
 
@@ -55,6 +56,26 @@ export async function generateAnalyticsAction(
       type: "custom",
     });
 
+    let analysis = null;
+    try {
+      analysis = await generateComparisonInsights({
+        title: report.title,
+        currentRange: { start: startDate, end: endDate },
+        comparisonRange,
+        metrics: changes,
+      });
+      await updateReportAnalysis(report.id, analysis);
+    } catch {
+      // AI optional; ignore failures but return message in summary.
+      analysis = {
+        summary: "AI analysis unavailable. Check OPENAI_API_KEY.",
+        perMetric: [],
+        anomalies: [],
+        seoRecommendations: [],
+        technicalRecommendations: [],
+      };
+    }
+
     revalidatePath("/generate");
     return {
       success: true,
@@ -63,6 +84,7 @@ export async function generateAnalyticsAction(
         currentRange: { start: startDate, end: endDate },
         comparisonRange,
         reportId: report.id,
+        analysis: analysis ?? undefined,
       },
     };
   } catch (error: unknown) {

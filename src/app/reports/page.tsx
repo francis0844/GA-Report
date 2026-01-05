@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { ReportsTable } from "@/components/ReportsTable";
+import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { getMissingEnvVars } from "@/lib/env";
 import { fetchReportSummaries, ReportSummary } from "@/lib/reports";
 
@@ -40,7 +41,13 @@ export default async function ReportsPage() {
             {errorMessage}
           </div>
         ) : (
-          <ReportsTable summaries={summaries} />
+          <div className="space-y-4">
+            <ReportsTable summaries={summaries} />
+            <AiInsightsPanel
+              reportId={summaries[0]?.id ?? null}
+              analysis={(summaries[0]?.ai_analysis as Record<string, unknown> | null) ?? null}
+            />
+          </div>
         )}
       </div>
     </AppShell>
