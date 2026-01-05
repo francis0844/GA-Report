@@ -4,8 +4,8 @@ import { fetchAnalytics } from "@/lib/ga";
 import { revalidatePath } from "next/cache";
 
 type ActionResponse =
-  | { error: string }
-  | { success: true; normalized: unknown; raw: unknown };
+  | { success: false; error: string }
+  | { success: true; error?: undefined; normalized: unknown; raw: unknown };
 
 export async function generateAnalyticsAction(
   _prevState: ActionResponse,
