@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export type ActionResponse =
   | { success: false; error: string }
-  | { success: true; normalized: unknown; raw: unknown };
+  | { success: true; error?: undefined; normalized: unknown; raw: unknown };
 
 export async function generateAnalyticsAction(
   _prevState: ActionResponse,

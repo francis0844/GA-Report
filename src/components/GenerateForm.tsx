@@ -65,7 +65,7 @@ export function GenerateForm() {
         Generate Report
       </button>
 
-      {state?.error ? (
+      {"error" in state && state.error ? (
         <div className="rounded-lg border border-red-500/60 bg-red-500/10 px-3 py-2 text-red-100 text-sm">
           {state.error}
         </div>
