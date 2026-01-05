@@ -2,7 +2,6 @@
 
 import { fetchAnalytics } from "@/lib/ga";
 import { createReportRecord, updateReportAnalysis } from "@/lib/reports";
-import { addDays, differenceInCalendarDays, parseISO } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { MetricChange, GenerateActionResponse } from "./types";
 import { generateComparisonInsights } from "@/lib/ai";
@@ -13,11 +12,16 @@ export async function generateAnalyticsAction(
   _prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
-  const startDate = String(formData.get("startDate") ?? "");
-  const endDate = String(formData.get("endDate") ?? "");
+  const currentStartDate = String(formData.get("currentStartDate") ?? "");
+  const currentEndDate = String(formData.get("currentEndDate") ?? "");
+  const comparisonStartDate = String(formData.get("comparisonStartDate") ?? "");
+  const comparisonEndDate = String(formData.get("comparisonEndDate") ?? "");
+  const comparisonType = String(formData.get("comparisonType") ?? "custom");
   const metricsText = String(formData.get("metrics") ?? "").trim();
 
-  if (!startDate || !endDate) return { success: false, error: "Provide start and end dates." };
+  if (!currentStartDate || !currentEndDate || !comparisonStartDate || !comparisonEndDate) {
+    return { success: false, error: "Provide current and comparison date ranges." };
+  }
 
   try {
     const metrics = metricsText
@@ -25,15 +29,14 @@ export async function generateAnalyticsAction(
       : undefined;
 
     const currentResult = await fetchAnalytics({
-      startDate,
-      endDate,
+      startDate: currentStartDate,
+      endDate: currentEndDate,
       metrics,
     });
 
-    const comparisonRange = calculateComparisonRange(startDate, endDate);
     const comparisonResult = await fetchAnalytics({
-      startDate: comparisonRange.start,
-      endDate: comparisonRange.end,
+      startDate: comparisonStartDate,
+      endDate: comparisonEndDate,
       metrics,
     });
 
@@ -41,27 +44,27 @@ export async function generateAnalyticsAction(
 
     const propertyId = process.env.GA4_PROPERTY_ID ?? "unknown";
     const report = await createReportRecord({
-      title: `Report ${startDate} to ${endDate}`,
+      title: `Report ${currentStartDate} to ${currentEndDate}`,
       propertyId,
-      startDate,
-      endDate,
-      comparisonStart: comparisonRange.start,
-      comparisonEnd: comparisonRange.end,
+      startDate: currentStartDate,
+      endDate: currentEndDate,
+      comparisonStart: comparisonStartDate,
+      comparisonEnd: comparisonEndDate,
       rawGaData: { current: currentResult.raw, comparison: comparisonResult.raw },
       normalizedMetrics: {
         metrics: changes,
-        currentRange: { start: startDate, end: endDate },
-        comparisonRange,
+        currentRange: { start: currentStartDate, end: currentEndDate },
+        comparisonRange: { start: comparisonStartDate, end: comparisonEndDate },
       },
-      type: "custom",
+      type: comparisonType || "custom",
     });
 
     let analysis = null;
     try {
       analysis = await generateComparisonInsights({
         title: report.title,
-        currentRange: { start: startDate, end: endDate },
-        comparisonRange,
+        currentRange: { start: currentStartDate, end: currentEndDate },
+        comparisonRange: { start: comparisonStartDate, end: comparisonEndDate },
         metrics: changes,
       });
       await updateReportAnalysis(report.id, analysis);
@@ -81,8 +84,8 @@ export async function generateAnalyticsAction(
       success: true,
       data: {
         metrics: changes,
-        currentRange: { start: startDate, end: endDate },
-        comparisonRange,
+        currentRange: { start: currentStartDate, end: currentEndDate },
+        comparisonRange: { start: comparisonStartDate, end: comparisonEndDate },
         reportId: report.id,
         analysis: analysis ?? undefined,
       },
@@ -94,32 +97,35 @@ export async function generateAnalyticsAction(
   }
 }
 
-export async function generateMockReportAction(): Promise<ActionResponse> {
+export async function generateMockReportAction(
+  currentStartDate: string,
+  currentEndDate: string,
+  comparisonStartDate: string,
+  comparisonEndDate: string,
+  comparisonType: string
+): Promise<ActionResponse> {
   try {
-    const end = new Date();
-    const start = addDays(end, -6);
-    const startDate = start.toISOString().slice(0, 10);
-    const endDate = end.toISOString().slice(0, 10);
-
-    const comparisonRange = calculateComparisonRange(startDate, endDate);
+    if (!currentStartDate || !currentEndDate || !comparisonStartDate || !comparisonEndDate) {
+      return { success: false, error: "Provide current and comparison date ranges for mock data." };
+    }
 
     const mockMetrics = buildMockMetrics();
     const propertyId = process.env.GA4_PROPERTY_ID ?? "mock-property";
 
     const report = await createReportRecord({
-      title: `Mock Report ${startDate} to ${endDate}`,
+      title: `Mock Report ${currentStartDate} to ${currentEndDate}`,
       propertyId,
-      startDate,
-      endDate,
-      comparisonStart: comparisonRange.start,
-      comparisonEnd: comparisonRange.end,
+      startDate: currentStartDate,
+      endDate: currentEndDate,
+      comparisonStart: comparisonStartDate,
+      comparisonEnd: comparisonEndDate,
       rawGaData: { mock: true },
       normalizedMetrics: {
         metrics: mockMetrics,
-        currentRange: { start: startDate, end: endDate },
-        comparisonRange,
+        currentRange: { start: currentStartDate, end: currentEndDate },
+        comparisonRange: { start: comparisonStartDate, end: comparisonEndDate },
       },
-      type: "custom",
+      type: comparisonType || "custom",
     });
 
     await updateReportAnalysis(report.id, {
@@ -139,8 +145,8 @@ export async function generateMockReportAction(): Promise<ActionResponse> {
       success: true,
       data: {
         metrics: mockMetrics,
-        currentRange: { start: startDate, end: endDate },
-        comparisonRange,
+        currentRange: { start: currentStartDate, end: currentEndDate },
+        comparisonRange: { start: comparisonStartDate, end: comparisonEndDate },
         reportId: report.id,
         analysis: {
           summary: "Mock AI analysis for demo purposes.",
@@ -156,18 +162,6 @@ export async function generateMockReportAction(): Promise<ActionResponse> {
       error instanceof Error ? error.message : "Failed to generate mock report.";
     return { success: false, error: message };
   }
-}
-
-function calculateComparisonRange(start: string, end: string) {
-  const startDate = parseISO(start);
-  const endDate = parseISO(end);
-  const duration = differenceInCalendarDays(endDate, startDate) + 1;
-  const comparisonEnd = addDays(startDate, -1);
-  const comparisonStart = addDays(comparisonEnd, -(duration - 1));
-  return {
-    start: comparisonStart.toISOString().slice(0, 10),
-    end: comparisonEnd.toISOString().slice(0, 10),
-  };
 }
 
 function computeChanges(

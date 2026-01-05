@@ -3,10 +3,10 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { generateAnalyticsAction, generateMockReportAction } from "@/app/generate/actions";
 import { type GenerateActionResponse } from "@/app/generate/types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { MetricsGrid } from "./MetricsGrid";
 import { AiInsightsPanel } from "./AiInsightsPanel";
-import { useTransition, useState } from "react";
+import { useTransition } from "react";
 
 const initialState: GenerateActionResponse = { success: false, error: "" };
 
@@ -24,32 +24,85 @@ export function GenerateForm() {
     d.setDate(d.getDate() - 7);
     return d;
   }, []);
+  const prevWeekStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return d;
+  }, []);
+  const prevWeekEnd = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 8);
+    return d;
+  }, []);
 
-  const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
+  const [currentStart, setCurrentStart] = useState(weekAgo.toISOString().slice(0, 10));
+  const [currentEnd, setCurrentEnd] = useState(today.toISOString().slice(0, 10));
+  const [comparisonStart, setComparisonStart] = useState(prevWeekStart.toISOString().slice(0, 10));
+  const [comparisonEnd, setComparisonEnd] = useState(prevWeekEnd.toISOString().slice(0, 10));
+  const [comparisonType, setComparisonType] = useState("weekly");
 
   return (
     <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-slate-200 mb-1">Start date</label>
+          <label className="block text-sm text-slate-200 mb-1">Current start date</label>
           <input
             type="date"
-            name="startDate"
-            defaultValue={toDateInput(weekAgo)}
+            name="currentStartDate"
+            value={currentStart}
+            onChange={(e) => setCurrentStart(e.target.value)}
             className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-white"
             required
           />
         </div>
         <div>
-          <label className="block text-sm text-slate-200 mb-1">End date</label>
+          <label className="block text-sm text-slate-200 mb-1">Current end date</label>
           <input
             type="date"
-            name="endDate"
-            defaultValue={toDateInput(today)}
+            name="currentEndDate"
+            value={currentEnd}
+            onChange={(e) => setCurrentEnd(e.target.value)}
             className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-white"
             required
           />
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-slate-200 mb-1">Comparison start date</label>
+          <input
+            type="date"
+            name="comparisonStartDate"
+            value={comparisonStart}
+            onChange={(e) => setComparisonStart(e.target.value)}
+            className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-white"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-slate-200 mb-1">Comparison end date</label>
+          <input
+            type="date"
+            name="comparisonEndDate"
+            value={comparisonEnd}
+            onChange={(e) => setComparisonEnd(e.target.value)}
+            className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-white"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm text-slate-200 mb-1">Comparison type</label>
+        <select
+          name="comparisonType"
+          value={comparisonType}
+          onChange={(e) => setComparisonType(e.target.value)}
+          className="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-white"
+        >
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="custom">Custom</option>
+        </select>
       </div>
       <div>
         <label className="block text-sm text-slate-200 mb-1">
@@ -69,7 +122,13 @@ export function GenerateForm() {
         type="button"
         onClick={() =>
           startMock(async () => {
-            const res = await generateMockReportAction();
+            const res = await generateMockReportAction(
+              currentStart,
+              currentEnd,
+              comparisonStart,
+              comparisonEnd,
+              comparisonType
+            );
             setMockState(res);
           })
         }
