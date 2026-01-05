@@ -7,7 +7,9 @@ import { type AiAnalysis } from "@/app/generate/types";
 import { getMissingEnvVars } from "@/lib/env";
 import { fetchReportSummaries, fetchReportNormalized, ReportSummary } from "@/lib/reports";
 
-const PdfExportPanel = dynamic(() => import("@/components/PdfExportPanel"), { ssr: false });
+const PdfExportPanel = dynamic(() => import("@/components/PdfExportPanel").then((m) => m.PdfExportPanel), {
+  ssr: false,
+});
 
 export default async function ReportsPage() {
   const missingEnv = getMissingEnvVars();
