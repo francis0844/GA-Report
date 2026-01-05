@@ -2,6 +2,7 @@ import { AppShell } from "@/components/AppShell";
 import { ReportsTable } from "@/components/ReportsTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { ReportCharts } from "@/components/ReportCharts";
+import { type AiAnalysis } from "@/app/generate/types";
 import { getMissingEnvVars } from "@/lib/env";
 import { fetchReportSummaries, fetchReportNormalized, ReportSummary } from "@/lib/reports";
 
@@ -53,7 +54,7 @@ export default async function ReportsPage() {
             <ReportsTable summaries={summaries} />
             <AiInsightsPanel
               reportId={summaries[0]?.id ?? null}
-              analysis={(summaries[0]?.ai_analysis as Record<string, unknown> | null) ?? null}
+              analysis={(summaries[0]?.ai_analysis as AiAnalysis | null) ?? null}
             />
             <ReportCharts
               reportId={primaryReportId}
