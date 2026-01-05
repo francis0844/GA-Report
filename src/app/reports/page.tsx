@@ -1,12 +1,12 @@
 import { AppShell } from "@/components/AppShell";
 import { ReportsTable } from "@/components/ReportsTable";
 import { getMissingEnvVars } from "@/lib/env";
-import { fetchReportSummaries } from "@/lib/reports";
+import { fetchReportSummaries, ReportSummary } from "@/lib/reports";
 
 export default async function ReportsPage() {
   const missingEnv = getMissingEnvVars();
 
-  let summaries = [];
+  let summaries: ReportSummary[] = [];
   let errorMessage = "";
 
   if (!missingEnv.length) {
