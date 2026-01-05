@@ -86,13 +86,17 @@ export async function generateComparisonInsights(
   const client = new OpenAI({ apiKey });
   const prompt = buildComparisonPrompt(payload);
 
-  const completion = await client.responses.create({
+  const completion = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-    response_format: { type: "json_object" },
-    input: prompt,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
   });
 
-  const text = completion.output_text ?? "{}";
+  const text = completion.choices?.[0]?.message?.content ?? "{}";
   try {
     const parsed = JSON.parse(text);
     return {
