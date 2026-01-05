@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { generateAnalyticsAction } from "@/app/generate/actions";
 import { type GenerateActionResponse } from "@/app/generate/types";
 import { useMemo } from "react";
@@ -61,12 +61,7 @@ export function GenerateForm() {
           Supports any GA4 metric strings; defaults to sessions, totalUsers, eventCount, conversions.
         </p>
       </div>
-      <button
-        type="submit"
-        className="rounded-lg bg-blue-600 text-white px-4 py-2 shadow-md shadow-blue-500/30 hover:bg-blue-500"
-      >
-        Generate Report
-      </button>
+      <SubmitButton />
 
       {"error" in state && state.error ? (
         <div className="rounded-lg border border-red-500/60 bg-red-500/10 px-3 py-2 text-red-100 text-sm">
@@ -85,5 +80,18 @@ export function GenerateForm() {
         </div>
       ) : null}
     </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded-lg bg-blue-600 text-white px-4 py-2 shadow-md shadow-blue-500/30 hover:bg-blue-500 disabled:opacity-60"
+    >
+      {pending ? "Generating..." : "Generate Report"}
+    </button>
   );
 }

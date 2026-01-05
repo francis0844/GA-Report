@@ -5,6 +5,7 @@ import { ReportCharts } from "@/components/ReportCharts";
 import { type AiAnalysis } from "@/app/generate/types";
 import { getMissingEnvVars } from "@/lib/env";
 import { fetchReportSummaries, fetchReportNormalized, ReportSummary } from "@/lib/reports";
+import { PdfExportPanel } from "@/components/PdfExportPanel";
 
 export default async function ReportsPage() {
   const missingEnv = getMissingEnvVars();
@@ -13,11 +14,13 @@ export default async function ReportsPage() {
   let errorMessage = "";
   let normalized: Record<string, unknown> | null = null;
   let primaryReportId: string | null = null;
+  let selectedIds: string[] = [];
 
   if (!missingEnv.length) {
     try {
       summaries = await fetchReportSummaries(50);
       primaryReportId = summaries[0]?.id ?? null;
+      selectedIds = primaryReportId ? [primaryReportId] : [];
       if (primaryReportId) {
         const norm = await fetchReportNormalized(primaryReportId);
         normalized = norm.normalized_metrics;
@@ -51,7 +54,7 @@ export default async function ReportsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <ReportsTable summaries={summaries} />
+            <ReportsTable summaries={summaries} selectedIds={selectedIds} />
             <AiInsightsPanel
               reportId={summaries[0]?.id ?? null}
               analysis={(summaries[0]?.ai_analysis as AiAnalysis | null) ?? null}
@@ -60,6 +63,7 @@ export default async function ReportsPage() {
               reportId={primaryReportId}
               normalized={normalized as Record<string, unknown> | null}
             />
+            <PdfExportPanel initialSelected={selectedIds} />
           </div>
         )}
       </div>

@@ -8,12 +8,19 @@ import { AlertTriangle } from "lucide-react";
 
 type Props = {
   summaries: ReportSummary[];
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
 };
 
-export function ReportsTable({ summaries }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+export function ReportsTable({ summaries, selectedIds, onSelectionChange }: Props) {
+  const [internalSelected, setInternalSelected] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<string>("");
   const [isPending, startTransition] = useTransition();
+
+  const selected = useMemo(() => {
+    if (selectedIds) return new Set(selectedIds);
+    return internalSelected;
+  }, [selectedIds, internalSelected]);
 
   const allSelected = useMemo(
     () => summaries.length > 0 && selected.size === summaries.length,
@@ -22,17 +29,21 @@ export function ReportsTable({ summaries }: Props) {
 
   const toggleAll = () => {
     if (allSelected) {
-      setSelected(new Set());
+      setInternalSelected(new Set());
+      onSelectionChange?.([]);
     } else {
-      setSelected(new Set(summaries.map((s) => s.id)));
+      const ids = summaries.map((s) => s.id);
+      setInternalSelected(new Set(ids));
+      onSelectionChange?.(ids);
     }
   };
 
   const toggleOne = (id: string) => {
-    setSelected((prev) => {
+    setInternalSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      onSelectionChange?.(Array.from(next));
       return next;
     });
   };
