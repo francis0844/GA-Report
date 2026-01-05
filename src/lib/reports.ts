@@ -58,6 +58,12 @@ type CreateReportInput = {
   propertyId: string;
   startDate: string;
   endDate: string;
+  type?: string;
+  comparisonStart?: string | null;
+  comparisonEnd?: string | null;
+  rawGaData?: unknown;
+  normalizedMetrics?: unknown;
+  status?: string;
 };
 
 export async function cleanupOldReports() {
@@ -100,15 +106,22 @@ export async function fetchReportSummaries(
 
 export async function createReportRecord(input: CreateReportInput) {
   const supabase = getSupabaseClient();
+  const payload: Record<string, unknown> = {
+    title: input.title,
+    property_id: input.propertyId,
+    start_date: input.startDate,
+    end_date: input.endDate,
+    status: input.status ?? "ready",
+    type: input.type ?? "custom",
+    comparison_start_date: input.comparisonStart ?? null,
+    comparison_end_date: input.comparisonEnd ?? null,
+    raw_ga_data: input.rawGaData ?? null,
+    normalized_metrics: input.normalizedMetrics ?? null,
+  };
+
   const { data, error } = await supabase
     .from("reports")
-    .insert({
-      title: input.title,
-      property_id: input.propertyId,
-      start_date: input.startDate,
-      end_date: input.endDate,
-      status: "ready",
-    })
+    .insert(payload)
     .select()
     .single();
 

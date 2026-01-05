@@ -1,13 +1,15 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { generateAnalyticsAction, type ActionResponse } from "@/app/generate/actions";
+import { generateAnalyticsAction } from "@/app/generate/actions";
+import { type GenerateActionResponse } from "@/app/generate/types";
 import { useMemo } from "react";
+import { MetricsGrid } from "./MetricsGrid";
 
-const initialState: ActionResponse = { success: false, error: "" };
+const initialState: GenerateActionResponse = { success: false, error: "" };
 
 export function GenerateForm() {
-  const [state, formAction] = useFormState<ActionResponse, FormData>(
+  const [state, formAction] = useFormState<GenerateActionResponse, FormData>(
     generateAnalyticsAction,
     initialState
   );
@@ -72,12 +74,11 @@ export function GenerateForm() {
       ) : null}
 
       {state?.success ? (
-        <div className="space-y-3 rounded-lg border border-emerald-600/60 bg-emerald-600/10 px-3 py-3 text-emerald-50 text-sm">
-          <p className="font-semibold text-white">Normalized preview</p>
-          <pre className="overflow-auto text-xs bg-slate-950/80 p-2 rounded">{JSON.stringify(state.normalized, null, 2)}</pre>
-          <p className="font-semibold text-white">Raw GA response</p>
-          <pre className="overflow-auto text-xs bg-slate-950/80 p-2 rounded">{JSON.stringify(state.raw, null, 2)}</pre>
-        </div>
+        <MetricsGrid
+          metrics={state.data.metrics}
+          currentRange={state.data.currentRange}
+          comparisonRange={state.data.comparisonRange}
+        />
       ) : null}
     </form>
   );
