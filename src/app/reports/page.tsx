@@ -1,11 +1,13 @@
 import { AppShell } from "@/components/AppShell";
+import dynamic from "next/dynamic";
 import { ReportsTable } from "@/components/ReportsTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { ReportCharts } from "@/components/ReportCharts";
 import { type AiAnalysis } from "@/app/generate/types";
 import { getMissingEnvVars } from "@/lib/env";
 import { fetchReportSummaries, fetchReportNormalized, ReportSummary } from "@/lib/reports";
-import { PdfExportPanel } from "@/components/PdfExportPanel";
+
+const PdfExportPanel = dynamic(() => import("@/components/PdfExportPanel"), { ssr: false });
 
 export default async function ReportsPage() {
   const missingEnv = getMissingEnvVars();
