@@ -1,18 +1,26 @@
 import { AppShell } from "@/components/AppShell";
 import { ReportsTable } from "@/components/ReportsTable";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
+import { ReportCharts } from "@/components/ReportCharts";
 import { getMissingEnvVars } from "@/lib/env";
-import { fetchReportSummaries, ReportSummary } from "@/lib/reports";
+import { fetchReportSummaries, fetchReportNormalized, ReportSummary } from "@/lib/reports";
 
 export default async function ReportsPage() {
   const missingEnv = getMissingEnvVars();
 
   let summaries: ReportSummary[] = [];
   let errorMessage = "";
+  let normalized: Record<string, unknown> | null = null;
+  let primaryReportId: string | null = null;
 
   if (!missingEnv.length) {
     try {
       summaries = await fetchReportSummaries(50);
+      primaryReportId = summaries[0]?.id ?? null;
+      if (primaryReportId) {
+        const norm = await fetchReportNormalized(primaryReportId);
+        normalized = norm.normalized_metrics;
+      }
     } catch (error: unknown) {
       errorMessage =
         error instanceof Error
@@ -46,6 +54,10 @@ export default async function ReportsPage() {
             <AiInsightsPanel
               reportId={summaries[0]?.id ?? null}
               analysis={(summaries[0]?.ai_analysis as Record<string, unknown> | null) ?? null}
+            />
+            <ReportCharts
+              reportId={primaryReportId}
+              normalized={normalized as Record<string, unknown> | null}
             />
           </div>
         )}
