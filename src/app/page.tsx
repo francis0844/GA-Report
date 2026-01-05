@@ -1,6 +1,6 @@
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
-import { cleanupOldReports, fetchReports } from "@/lib/reports";
+import { cleanupOldReports, fetchReports, ReportBundle } from "@/lib/reports";
 
 async function loadReports() {
   await cleanupOldReports();
@@ -10,7 +10,7 @@ async function loadReports() {
 
 export default async function Home() {
   let loadError = "";
-  let reports = [];
+  let reports: ReportBundle[] = [];
 
   try {
     reports = await loadReports();

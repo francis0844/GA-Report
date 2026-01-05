@@ -48,17 +48,7 @@ Return 3-5 concise bullets that call out trends, anomalies, and recommended next
 
   const completion = await client.responses.create({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-    input: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: prompt,
-          },
-        ],
-      },
-    ],
+    input: prompt,
   });
 
   const summary =
