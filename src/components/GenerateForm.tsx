@@ -1,11 +1,12 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { generateAnalyticsAction } from "@/app/generate/actions";
+import { generateAnalyticsAction, generateMockReportAction } from "@/app/generate/actions";
 import { type GenerateActionResponse } from "@/app/generate/types";
 import { useMemo } from "react";
 import { MetricsGrid } from "./MetricsGrid";
 import { AiInsightsPanel } from "./AiInsightsPanel";
+import { useTransition, useState } from "react";
 
 const initialState: GenerateActionResponse = { success: false, error: "" };
 
@@ -14,6 +15,8 @@ export function GenerateForm() {
     generateAnalyticsAction,
     initialState
   );
+  const [mockState, setMockState] = useState<GenerateActionResponse>({ success: false, error: "" });
+  const [isMockPending, startMock] = useTransition();
 
   const today = useMemo(() => new Date(), []);
   const weekAgo = useMemo(() => {
@@ -62,10 +65,28 @@ export function GenerateForm() {
         </p>
       </div>
       <SubmitButton />
+      <button
+        type="button"
+        onClick={() =>
+          startMock(async () => {
+            const res = await generateMockReportAction();
+            setMockState(res);
+          })
+        }
+        disabled={isMockPending}
+        className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-100 hover:border-blue-500 disabled:opacity-60"
+      >
+        {isMockPending ? "Generating mock..." : "Generate mock data"}
+      </button>
 
       {"error" in state && state.error ? (
         <div className="rounded-lg border border-red-500/60 bg-red-500/10 px-3 py-2 text-red-100 text-sm">
           {state.error}
+        </div>
+      ) : null}
+      {"error" in mockState && mockState.error ? (
+        <div className="rounded-lg border border-red-500/60 bg-red-500/10 px-3 py-2 text-red-100 text-sm">
+          {mockState.error}
         </div>
       ) : null}
 
@@ -77,6 +98,18 @@ export function GenerateForm() {
             comparisonRange={state.data.comparisonRange}
           />
           <AiInsightsPanel reportId={state.data.reportId ?? null} analysis={state.data.analysis ?? null} />
+        </div>
+      ) : mockState?.success ? (
+        <div className="space-y-4">
+          <MetricsGrid
+            metrics={mockState.data.metrics}
+            currentRange={mockState.data.currentRange}
+            comparisonRange={mockState.data.comparisonRange}
+          />
+          <AiInsightsPanel
+            reportId={mockState.data.reportId ?? null}
+            analysis={mockState.data.analysis ?? null}
+          />
         </div>
       ) : null}
     </form>
