@@ -5,8 +5,8 @@ import { generateAnalyticsAction } from "@/app/generate/actions";
 import { useMemo } from "react";
 
 type ActionState =
-  | { success: false; error?: string }
-  | { success: true; error?: undefined; normalized: unknown; raw: unknown };
+  | { success: false; error: string }
+  | { success: true; normalized: unknown; raw: unknown };
 
 const initialState: ActionState = { success: false };
 

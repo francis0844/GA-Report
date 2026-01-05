@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 type ActionResponse =
   | { success: false; error: string }
-  | { success: true; error?: undefined; normalized: unknown; raw: unknown };
+  | { success: true; normalized: unknown; raw: unknown };
 
 export async function generateAnalyticsAction(
   _prevState: ActionResponse,
@@ -15,7 +15,7 @@ export async function generateAnalyticsAction(
   const endDate = String(formData.get("endDate") ?? "");
   const metricsText = String(formData.get("metrics") ?? "").trim();
 
-  if (!startDate || !endDate) return { error: "Provide start and end dates." };
+  if (!startDate || !endDate) return { success: false, error: "Provide start and end dates." };
 
   try {
     const metrics = metricsText
@@ -33,6 +33,6 @@ export async function generateAnalyticsAction(
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch analytics.";
-    return { error: message };
+    return { success: false, error: message };
   }
 }
