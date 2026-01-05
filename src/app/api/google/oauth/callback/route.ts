@@ -25,7 +25,9 @@ export async function GET(request: Request) {
   }
 
   const client = new OAuth2Client(clientId, clientSecret, redirectUri);
-  const tokenResponse = await client.getToken(code);
+  // Type guard above ensures code is present.
+  const authCode = code as string;
+  const tokenResponse = await client.getToken(authCode);
   const tokens = tokenResponse.tokens;
 
   const refreshToken = tokens.refresh_token;
