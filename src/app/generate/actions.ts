@@ -3,7 +3,7 @@
 import { fetchAnalytics } from "@/lib/ga";
 import { revalidatePath } from "next/cache";
 
-type ActionResponse =
+export type ActionResponse =
   | { success: false; error: string }
   | { success: true; normalized: unknown; raw: unknown };
 

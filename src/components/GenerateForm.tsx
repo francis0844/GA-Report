@@ -1,17 +1,16 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { generateAnalyticsAction } from "@/app/generate/actions";
+import { generateAnalyticsAction, type ActionResponse } from "@/app/generate/actions";
 import { useMemo } from "react";
 
-type ActionState =
-  | { success: false; error?: string }
-  | { success: true; normalized: unknown; raw: unknown };
-
-const initialState: ActionState = { success: false, error: "" };
+const initialState: ActionResponse = { success: false, error: "" };
 
 export function GenerateForm() {
-  const [state, formAction] = useFormState(generateAnalyticsAction, initialState);
+  const [state, formAction] = useFormState<ActionResponse, FormData>(
+    generateAnalyticsAction,
+    initialState
+  );
 
   const today = useMemo(() => new Date(), []);
   const weekAgo = useMemo(() => {
