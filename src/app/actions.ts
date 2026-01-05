@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { generateInsights } from "@/lib/ai";
-import { fetchGaReport } from "@/lib/ga";
+import { fetchAnalytics } from "@/lib/ga";
 import {
   cleanupOldReports,
   createReportRecord,
@@ -34,7 +34,7 @@ export async function createReportAction(
 
     await cleanupOldReports();
 
-    const gaReport = await fetchGaReport({
+    const gaReport = await fetchAnalytics({
       propertyId: parsed.propertyId,
       startDate: parsed.startDate,
       endDate: parsed.endDate,
