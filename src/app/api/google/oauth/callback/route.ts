@@ -25,7 +25,8 @@ export async function GET(request: Request) {
   }
 
   const client = new OAuth2Client(clientId, clientSecret, redirectUri);
-  const { tokens } = await client.getToken(code);
+  const tokenResponse = await client.getToken(code);
+  const tokens = tokenResponse.tokens;
 
   const refreshToken = tokens.refresh_token;
   const accessToken = tokens.access_token;
